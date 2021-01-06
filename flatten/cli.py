@@ -22,7 +22,6 @@ def main(
         "primary", help="The athena workspace, if you use them"
     ),
 ):
-    pass
     ToFlatParquet(
         database=database,
         source_table=source_table,
