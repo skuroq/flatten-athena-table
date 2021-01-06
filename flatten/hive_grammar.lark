@@ -1,0 +1,68 @@
+?type_db_col: primitivetype
+       | listtype
+       | structtype
+       | maptype
+
+ 
+   ?name_type : NAME ":" type_db_col  
+
+   listtype : "array" _LESSTHAN [type_db_col ("," type_db_col)*] _GREATERTHAN
+   structtype : "struct" _LESSTHAN [name_type ("," name_type)*]  _GREATERTHAN
+   maptype: map _LESSTHAN primitivetype "," type_db_col _GREATERTHAN
+   primitivetype : string
+               | bigint
+               | boolean  
+               | int
+               | float
+               | double
+               | timestamp
+               | tinyint
+               | smallint
+               | precision
+               | date
+               | datetime
+               | timestamp
+               | timestamplocaltz
+               | time
+               | zone
+               | interval
+               | string
+               | decimal (LPAREN NUMBER (COMMA NUMBER)* RPAREN)*
+               | char LPAREN NUMBER RPAREN
+               | varchar LPAREN NUMBER RPAREN
+
+   comment: "comment"
+   boolean: "boolean"
+   tinyint: "tinyint"
+   smallint: "smallint"
+   int: "int" | "integer"
+   bigint: "bigint"
+   float: "float"
+   double: "double"
+   precision: "precision"
+   date: "date"
+   datetime: "datetime"
+   timestamp: "timestamp"
+   timestamplocaltz: "timestamplocaltz"
+   time: "time"
+   zone: "zone"
+   interval: "interval"
+   decimal: "decimal" | "dec" | "numeric"
+   string: "string"
+   char: "char"
+   varchar: "varchar"
+   map: "map"
+   uniontype: "uniontype"
+   _LESSTHAN: "<"
+   _GREATERTHAN:">"
+   LPAREN: "("
+   RPAREN: ")"
+   COMMA: ","
+   NAME: ("_"|"-"|LETTER) ("_"|"-"|LETTER|DIGIT)*
+
+
+   %import common.WS
+   %import common.NUMBER -> NUMBER
+   %import common.LETTER -> LETTER
+   %import common.DIGIT -> DIGIT
+   %ignore WS
