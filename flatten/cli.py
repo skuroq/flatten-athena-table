@@ -1,6 +1,5 @@
-from flatten.aws import ToFlatParquet
-
 import typer
+from flatten.aws import ToFlatParquet
 
 
 def main(
