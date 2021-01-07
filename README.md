@@ -1,7 +1,7 @@
 
 ---
 
-**Blogpost**:<a href="https://skuro.org/posts/flattening-athena-tables/" target="_blank">https://skuro.org/posts/flattening-athena-tables/</a> 
+**Blogpost**: <a href="https://skuro.org/posts/flattening-athena-tables/" target="_blank">https://skuro.org/posts/flattening-athena-tables/</a> 
 
 ---
 
