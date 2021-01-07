@@ -12,6 +12,6 @@ Convert athena tables with nested columns into flat tables!
 
 ### Usage:  
 
-```flatten default raw_nyphilarchive flat_nyphilarchive s3://skuroq/flat s3://skuroq/results```
+Example: ```flatten default raw_nyphilarchive flat_nyphilarchive s3://skuroq/flat s3://skuroq/results```
 
 ```flatten --help``` for more information :)
