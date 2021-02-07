@@ -239,19 +239,33 @@ class GlueTable:
 
         if not partitions:
             partitions = []
+        serde_info = {
+            "SerializationLibrary": serde,
+        }
+        if serde == "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe":
+            serde_info["Parameters"] = {"serialization.format": "1"}
 
         return self.glue_client.create_table(
             DatabaseName=self.database_name,
             TableInput={
                 "Name": self.table_name,
+                "Owner": "hadoop",
                 "StorageDescriptor": {
                     "Columns": [
                         {"Name": name, "Type": type_} for name, type_ in columns
                     ],
                     "Location": location,
+                    "SkewedInfo": {
+                        "SkewedColumnNames": [],
+                        "SkewedColumnValues": [],
+                        "SkewedColumnValueLocationMaps": {},
+                    },
+                    "Parameters": {},
+                    "BucketColumns": [],
                     "InputFormat": input_format,
                     "OutputFormat": output_format,
-                    "SerdeInfo": {"SerializationLibrary": serde},
+                    "NumberOfBuckets": -1,
+                    "SerdeInfo": serde_info,
                 },
                 "PartitionKeys": [
                     {"Name": name, "Type": type_} for name, type_ in partitions
