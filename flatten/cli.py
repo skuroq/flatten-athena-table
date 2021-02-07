@@ -1,6 +1,5 @@
-from flatten.aws import ToFlatParquet
-
 import typer
+from flatten.aws import ToFlatParquet
 
 
 def main(
@@ -22,7 +21,6 @@ def main(
         "primary", help="The athena workspace, if you use them"
     ),
 ):
-    pass
     ToFlatParquet(
         database=database,
         source_table=source_table,
