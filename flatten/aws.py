@@ -17,7 +17,7 @@ from loguru import logger
 from pkg_resources import resource_filename
 from pyathena.cursor import Cursor
 
-from flatten.hive_parser import HiveParser
+from flatten.hive_parser import HiveParser, reconstruct_array
 from flatten.utils import column_query_path_format, flatten_dict
 
 
@@ -193,7 +193,9 @@ class GlueTable:
                     source_columns, target_columns.items()
                 ):
                     if isinstance(target_type, list):
-                        target_type = "string"
+                        target_type = reconstruct_array(
+                            self.hive_parser.parser, target_type
+                        )
                     column_mapping.append(
                         GlueColumnMapping(source_column, target_column, target_type)
                     )

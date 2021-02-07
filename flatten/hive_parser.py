@@ -84,3 +84,41 @@ def flatten_type(parser, hive_str):
         list_of_columns.append(flattend_tree)
 
     return list_of_columns
+
+
+def reconstruct_primitive_type(k, v):
+    return Tree(
+        "name_type",
+        [
+            Token("NAME", k),
+            Tree("primitivetype", [Tree(v, [])]),
+        ],
+    )
+
+
+def reconstruct_struct_type(type: dict):
+    tree = Tree("structtype", [])
+    for k, v in type.items():
+        tree.children.append(reconstruct_primitive_type(k, v))
+    return tree
+
+
+def reconstruct_array_type(type: list):
+    tree = Tree("listtype", [])
+    for i in type:
+        if isinstance(i, dict):
+            # for example array<struct<a:string,b:string>>
+            tree.children.append(reconstruct_struct_type(i))
+        else:
+            # for example array<string>
+            tree.children.append(
+                Tree("primitivetype", [Tree(i, [])]),
+            )
+    return tree
+
+
+def reconstruct_array(parser, type: List = [{"a": "string", "b": "string"}]):
+    # this function only converts array types back to hive syntax if they are of the schema array<struct<a:string,b:string>>
+    # apparently array<struct<b:struct<>>> is not allowed in hive
+    tree = reconstruct_array_type(type)
+    return Reconstructor(parser).reconstruct(tree)
