@@ -1,3 +1,4 @@
+import pytest  # noqa
 from flatten.hive_parser import HiveParser
 
 
