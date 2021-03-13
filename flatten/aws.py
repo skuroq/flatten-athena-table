@@ -1,31 +1,33 @@
 from __future__ import annotations
 
-import logging
 import os
 import random
 import string
 from collections import namedtuple
-from typing import Dict, List
-from urllib.parse import urlsplit
 from functools import cached_property
+from typing import Dict
+from typing import List
+from urllib.parse import urlsplit
+
 import boto3
 import pyathena
 import sqlparse
 from botocore.exceptions import ClientError
+from flatten.hive_parser import HiveParser
+from flatten.hive_parser import reconstruct_array
+from flatten.utils import column_query_path_format
+from flatten.utils import flatten_dict
 from jinja2 import Template
 from loguru import logger
 from pkg_resources import resource_filename
 from pyathena.cursor import Cursor
-
-from flatten.hive_parser import HiveParser, reconstruct_array
-from flatten.utils import column_query_path_format, flatten_dict
 
 
 s3 = boto3.resource("s3")
 
 
 def splitted_s3_key(s3_url: str) -> Dict:
-    (scheme, netloc, path, query, fragment) = urlsplit(s3_url, allow_fragments=False)
+    (_, netloc, path, _, _) = urlsplit(s3_url, allow_fragments=False)
 
     parts = {
         "bucket": netloc,

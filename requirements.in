@@ -1,0 +1,8 @@
+boto3
+Jinja2
+lark-parser
+loguru
+pyathena
+python-slugify
+sqlparse
+typer

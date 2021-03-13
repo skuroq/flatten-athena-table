@@ -1,17 +1,17 @@
-
 ---
 
-**Blogpost**: <a href="https://skuro.org/posts/flattening-athena-tables/" target="_blank">https://skuro.org/posts/flattening-athena-tables/</a> 
+**Blogpost**: <a href="https://skuro.org/posts/flattening-athena-tables/" target="_blank">https://skuro.org/posts/flattening-athena-tables/</a>
 
 ---
 
 Convert athena tables with nested columns into flat tables!
 
-### Installation:  
-```pip install git+https://github.com/skuroq/flatten-athena-table.git```
+### Installation:
 
-### Usage:  
+`pip install git+https://github.com/skuroq/flatten-athena-table.git`
 
-Example: ```flatten default raw_nyphilarchive flat_nyphilarchive s3://skuroq/flat s3://skuroq/results```
+### Usage:
 
-```flatten --help``` for more information :)
+Example: `flatten default raw_nyphilarchive flat_nyphilarchive s3://skuroq/flat s3://skuroq/results`
+
+`flatten --help` for more information :)
