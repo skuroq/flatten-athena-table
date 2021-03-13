@@ -21,6 +21,7 @@ def main(
         "primary", help="The athena workspace, if you use them"
     ),
 ):
+    # TODO add a check if logged into AWS CLI
     ToFlatParquet(
         database=database,
         source_table=source_table,
