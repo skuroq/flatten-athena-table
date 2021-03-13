@@ -173,7 +173,7 @@ class GlueTable:
             List[GlueColumnMapping]: [description]
         """
         column_mapping = []
-
+        # TODO refactor nested logic
         for col_name, col_type in self.columns():
             parsed_type = self.hive_parser(col_type)
             if isinstance(parsed_type, dict):
