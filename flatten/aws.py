@@ -66,10 +66,7 @@ class AthenaConnection:
         self.s3_staging_dir = s3_staging_dir
         self.cursor_class = cursor_class
 
-    def query(self, sql: str):
-        return self._query(sql, result_location=self.s3_staging_dir)
-
-    def _query(self, sql: str, result_location=None):
+    def query(self, sql: str, result_location=None):
         if result_location is None:
             raise ValueError("Result Location not defined")
 
