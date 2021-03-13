@@ -24,8 +24,3 @@ setup(
     package_data={"": ["*.sql", "*.lark"]},
     extras_require={"test": ["pytest", "flake8"]},
 )
-
-import setuptools
-
-if __name__ == "__main__":
-    setuptools.setup()
