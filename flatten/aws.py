@@ -22,7 +22,6 @@ from loguru import logger
 from pkg_resources import resource_filename
 from pyathena.cursor import Cursor
 
-
 s3 = boto3.resource("s3")
 
 
@@ -69,14 +68,11 @@ class AthenaConnection:
         self.s3_staging_dir = s3_staging_dir
         self.cursor_class = cursor_class
 
-    def query(self, sql: str, result_location=None):
-        if result_location is None:
-            raise ValueError("Result Location not defined")
-
+    def query(self, sql: str):
         logger.info("{}".format(sql))
         conn = pyathena.connect(
             work_group=self.workgroup,
-            s3_staging_dir=result_location,
+            s3_staging_dir=self.s3_staging_dir,
             cursor_class=self.cursor_class,
         )
         cursor = conn.cursor()
@@ -98,7 +94,8 @@ class GlueTable:
         self.database_name = database_name
         self.table_name = table_name
         self.table_version_id = table_version_id
-        self.metadata = metadata
+        if metadata:
+            self.metadata = metadata
 
     @cached_property
     def metadata(self):
@@ -159,6 +156,12 @@ class GlueTable:
         for c in glue_cols:
             columns.append((c["Name"], c["Type"]))
 
+        # Check if there are columns that are the same if lowercased
+        lowercased = [s[0].lower() for s in columns]
+        if len(lowercased) != len(set(lowercased)):
+            raise ValueError(
+                "Please check your table schema for duplicate column names (upper/lower case)!"
+            )
         return columns
 
     def delete(self):
@@ -202,7 +205,7 @@ class GlueTable:
                 # Wrapping col_name in double quotes because hive and presto have different
                 # constraints on which character are allowed
                 column_mapping.append(
-                    GlueColumnMapping(f'"{col_name}"', f'"{col_name}"', col_type)
+                    GlueColumnMapping(f"{col_name}", f"{col_name}", col_type)
                 )
 
         return column_mapping
@@ -232,7 +235,10 @@ class GlueTable:
         Force reloading metadata by deleting it as there may be auto-generated info in
         there that will change
         """
-        delattr(self, "metadata")
+        try:
+            delattr(self, "metadata")
+        except AttributeError:
+            logger.debug("Attribute Metadata was not accessed before")
         # TODO consider moving the following creation of the glue table config into a separate jinja template
         if not parameters:
             parameters = {
@@ -315,8 +321,8 @@ class ToFlatParquet:
             self.target_table.purge_data()
 
         if not self.target_table.exists():
-            logger.info(f"Creating target table {self.target_table}.")
-            self.target_table_glue.create(
+            logger.info(f"Creating target table {self.target_table.full_name}.")
+            self.target_table.create(
                 columns=[
                     (col.target_name, col.type)
                     for col in self.source_table.flat_mapping()
@@ -364,7 +370,7 @@ class ToFlatParquet:
         self.conn.query(self.generate_insert_overwrite_query(temp_table_glue))
         logger.info("Deleting temporary table.")
         temp_table_glue.delete()
-        logger.info(f"Successfully flattend {self.database}.{self.source_table}!")
+        logger.info(f"Successfully flattend {self.source_table.full_name}!")
         logger.info(
-            f"You can find the flattend table in athena {self.database}.{self.target_table}"
+            f"You can find the flattend table in athena {self.target_table.full_name}"
         )

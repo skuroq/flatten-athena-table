@@ -17,11 +17,11 @@ def slugify_key(
         path = key
     path = slugify(
         path,
-        lowercase=False,
+        lowercase=True,
         separator=separator,
         replacements=[[" ", ""]],
     )
-    return f'"{path}"'
+    return f"{path}"
 
 
 def column_query_path_format(
