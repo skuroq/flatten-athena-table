@@ -80,3 +80,19 @@ def test_struct():
     """
     data4 = hive(hive_str4)
     assert data4 == {"loc_lat": "decimal", "service_handler": "string"}
+
+
+def test_array():
+    hive = HiveParser()
+    hive_str4 = r"""
+    struct<important_nested_data:
+    array<string,string,struct<loc_lat:decimal,service_handler:string>>>
+    """
+    data4 = hive(hive_str4)
+    assert data4 == {
+        "important_nested_data": [
+            "string",
+            "string",
+            {"loc_lat": "decimal", "service_handler": "string"},
+        ]
+    }
