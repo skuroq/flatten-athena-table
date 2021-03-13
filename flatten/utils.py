@@ -1,6 +1,7 @@
-from slugify import slugify
 from functools import lru_cache
 from typing import Dict
+
+from slugify import slugify
 
 
 @lru_cache(maxsize=1024)
@@ -20,7 +21,7 @@ def slugify_key(
         separator=separator,
         replacements=[[" ", ""]],
     )
-    return path
+    return f"{path}"
 
 
 def column_query_path_format(

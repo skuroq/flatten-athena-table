@@ -1,31 +1,32 @@
 from __future__ import annotations
 
-import logging
 import os
 import random
 import string
-from collections import namedtuple
-from typing import Dict, List
-from urllib.parse import urlsplit
 from functools import cached_property
+from typing import Dict
+from typing import List
+from typing import NamedTuple
+from urllib.parse import urlsplit
+
 import boto3
 import pyathena
 import sqlparse
 from botocore.exceptions import ClientError
+from flatten.hive_parser import HiveParser
+from flatten.hive_parser import reconstruct_array
+from flatten.utils import column_query_path_format
+from flatten.utils import flatten_dict
 from jinja2 import Template
 from loguru import logger
 from pkg_resources import resource_filename
 from pyathena.cursor import Cursor
 
-from flatten.hive_parser import HiveParser, reconstruct_array
-from flatten.utils import column_query_path_format, flatten_dict
-
-
 s3 = boto3.resource("s3")
 
 
 def splitted_s3_key(s3_url: str) -> Dict:
-    (scheme, netloc, path, query, fragment) = urlsplit(s3_url, allow_fragments=False)
+    (_, netloc, path, _, _) = urlsplit(s3_url, allow_fragments=False)
 
     parts = {
         "bucket": netloc,
@@ -67,14 +68,11 @@ class AthenaConnection:
         self.s3_staging_dir = s3_staging_dir
         self.cursor_class = cursor_class
 
-    def query(self, sql: str, result_location=None):
-        if result_location is None:
-            raise ValueError("Result Location not defined")
-
+    def query(self, sql: str):
         logger.info("{}".format(sql))
         conn = pyathena.connect(
             work_group=self.workgroup,
-            s3_staging_dir=result_location,
+            s3_staging_dir=self.s3_staging_dir,
             cursor_class=self.cursor_class,
         )
         cursor = conn.cursor()
@@ -82,9 +80,10 @@ class AthenaConnection:
         return cursor
 
 
-GlueColumnMapping = namedtuple(
-    "GlueColumnMapping", ["source_name", "target_name", "type"]
-)
+class GlueColumnMapping(NamedTuple):
+    source_name: str
+    target_name: str
+    type: str
 
 
 class GlueTable:
@@ -95,22 +94,23 @@ class GlueTable:
         self.database_name = database_name
         self.table_name = table_name
         self.table_version_id = table_version_id
-        self.metadata = metadata
+        if metadata:
+            self.metadata = metadata
 
     @cached_property
     def metadata(self):
         if self.exists():
-            self._metadata = self._get_table(
+            metadata = self._get_table(
                 client=self.glue_client,
                 database=self.database_name,
                 table_name=self.table_name,
                 table_version_id=self.table_version_id,
             )
-        return self._metadata
+        return metadata
 
     @property
     def full_name(self):
-        return f"{self.database_name}.{self.table_name}"
+        return f'"{self.database_name}"."{self.table_name}"'
 
     @staticmethod
     def _get_table(client, database, table_name, table_version_id):
@@ -156,6 +156,12 @@ class GlueTable:
         for c in glue_cols:
             columns.append((c["Name"], c["Type"]))
 
+        # Check if there are columns that are the same if lowercased
+        lowercased = [s[0].lower() for s in columns]
+        if len(lowercased) != len(set(lowercased)):
+            raise ValueError(
+                "Please check your table schema for duplicate column names (upper/lower case)!"
+            )
         return columns
 
     def delete(self):
@@ -195,8 +201,12 @@ class GlueTable:
                     )
             else:
                 if isinstance(col_type, list):
-                    col_type = "string"
-                column_mapping.append(GlueColumnMapping(col_name, col_name, col_type))
+                    col_type = reconstruct_array(self.hive_parser.parser, col_type)
+                # Wrapping col_name in double quotes because hive and presto have different
+                # constraints on which character are allowed
+                column_mapping.append(
+                    GlueColumnMapping(f"{col_name}", f"{col_name}", col_type)
+                )
 
         return column_mapping
 
@@ -225,7 +235,10 @@ class GlueTable:
         Force reloading metadata by deleting it as there may be auto-generated info in
         there that will change
         """
-        delattr(self, "metadata")
+        try:
+            delattr(self, "metadata")
+        except AttributeError:
+            logger.debug("Attribute Metadata was not accessed before")
         # TODO consider moving the following creation of the glue table config into a separate jinja template
         if not parameters:
             parameters = {
@@ -299,33 +312,39 @@ class ToFlatParquet:
             s3_staging_dir=self.s3_staging_dir,
         )
 
-        self.source_table_glue = GlueTable(
-            database_name=self.database,
-            table_name=self.source_table,
-            table_version_id=self.source_table_version_id,
-        )
-        self.target_table_glue = GlueTable(
-            database_name=self.database, table_name=self.target_table
-        )
-
     def refresh_target_table(self, drop_if_exists=False) -> None:
-
         if drop_if_exists:
             logger.info("Removing old target table data from glue.")
-            self.target_table_glue.delete()
-        if self.target_table_glue.exists():
+            self.target_table.delete()
+        if self.target_table.exists():
             logger.info("Removing old target table data  s3.")
-            self.target_table_glue.purge_data()
+            self.target_table.purge_data()
 
-        if not self.target_table_glue.exists():
-            logger.info(f"Creating target table {self.target_table}.")
-            self.target_table_glue.create(
+        if not self.target_table.exists():
+            logger.info(f"Creating target table {self.target_table.full_name}.")
+            self.target_table.create(
                 columns=[
                     (col.target_name, col.type)
-                    for col in self.source_table_glue.flat_mapping()
+                    for col in self.source_table.flat_mapping()
                 ],
                 location=self.target_table_location,
             )
+
+    def generate_insert_overwrite_query(self, tmp_table):
+        return query_gen(
+            template=resource_filename(
+                __name__, os.path.join("create_flat_tmp_table_parquet.sql")
+            ),
+            query_args={
+                "tmp_table": tmp_table.full_name,
+                "source_tb_name": self.source_table.full_name,
+                "location": self.target_table.location(),
+                "columns": [
+                    (col.source_name, col.target_name)
+                    for col in self.source_table.flat_mapping()
+                ],
+            },
+        )
 
     def insert_overwrite(self, temp_db=None) -> None:
         """
@@ -335,7 +354,7 @@ class ToFlatParquet:
         :param temp_db:
         :return:
         """
-        assert self.source_table_glue.columns() is not None
+        assert self.source_table.columns() is not None
 
         self.refresh_target_table()
         logger.info("Creating temporary table for data transformation.")
@@ -348,25 +367,10 @@ class ToFlatParquet:
         if temp_table_glue.exists():
             temp_table_glue.delete()
 
-        self.conn.query(
-            query_gen(
-                template=resource_filename(
-                    __name__, os.path.join("create_flat_tmp_table_parquet.sql")
-                ),
-                query_args={
-                    "tmp_table": f"{temp_db}.{temp_table_name}",
-                    "source_tb_name": f"{self.database}.{self.source_table}",
-                    "location": self.target_table_glue.location(),
-                    "columns": [
-                        (col.source_name, col.target_name)
-                        for col in self.source_table_glue.flat_mapping()
-                    ],
-                },
-            )
-        )
+        self.conn.query(self.generate_insert_overwrite_query(temp_table_glue))
         logger.info("Deleting temporary table.")
         temp_table_glue.delete()
-        logger.info(f"Successfully flattend {self.database}.{self.source_table}!")
+        logger.info(f"Successfully flattend {self.source_table.full_name}!")
         logger.info(
-            f"You can find the flattend table in athena {self.database}.{self.target_table}"
+            f"You can find the flattend table in athena {self.target_table.full_name}"
         )

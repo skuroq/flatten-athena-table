@@ -1,4 +1,5 @@
 import typer
+from flatten.aws import GlueTable
 from flatten.aws import ToFlatParquet
 
 
@@ -22,6 +23,11 @@ def main(
     ),
 ):
     # TODO add a check if logged into AWS CLI
+    source_table = GlueTable(
+        database_name=database,
+        table_name=source_table,
+    )
+    target_table = GlueTable(database_name=database, table_name=target_table)
     ToFlatParquet(
         database=database,
         source_table=source_table,

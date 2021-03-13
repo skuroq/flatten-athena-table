@@ -1,0 +1,7 @@
+black
+coverage
+pytest
+pip-tools
+pre-commit
+tox
+coverage

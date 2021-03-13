@@ -1,0 +1,68 @@
+{
+    "Name": "raw_nyphilarchive",
+    "DatabaseName": "default",
+    "Owner": "owner",
+    "CreateTime": "2021-01-04T20:20:15+01:00",
+    "UpdateTime": "2021-01-04T20:20:15+01:00",
+    "LastAccessTime": "2021-01-04T20:20:15+01:00",
+    "Retention": 0,
+    "StorageDescriptor": {
+        "Columns": [
+            {
+                "Name": "id",
+                "Type": "string"
+            },
+            {
+                "Name": "ID",
+                "Type": "string"
+            },
+            {
+                "Name": "test",
+                "Type": "struct<ID:string,id:string>"
+            }
+        ],
+        "Location": "s3://xxxx/nyphilarchive/",
+        "InputFormat": "org.apache.hadoop.mapred.TextInputFormat",
+        "OutputFormat": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "Compressed": false,
+        "NumberOfBuckets": -1,
+        "SerdeInfo": {
+            "SerializationLibrary": "org.openx.data.jsonserde.JsonSerDe",
+            "Parameters": {
+                "paths": "concert,id,orchestra,programID,season,work"
+            }
+        },
+        "BucketColumns": [],
+        "SortColumns": [],
+        "Parameters": {
+            "CrawlerSchemaDeserializerVersion": "1.0",
+            "CrawlerSchemaSerializerVersion": "1.0",
+            "UPDATED_BY_CRAWLER": "nyphilarchive",
+            "averageRecordSize": "699",
+            "classification": "json",
+            "compressionType": "none",
+            "objectCount": "1",
+            "recordCount": "6",
+            "sizeKey": "4197",
+            "typeOfData": "file"
+        },
+        "StoredAsSubDirectories": false
+    },
+    "PartitionKeys": [],
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+        "CrawlerSchemaDeserializerVersion": "1.0",
+        "CrawlerSchemaSerializerVersion": "1.0",
+        "UPDATED_BY_CRAWLER": "nyphilarchive",
+        "averageRecordSize": "699",
+        "classification": "json",
+        "compressionType": "none",
+        "objectCount": "1",
+        "recordCount": "6",
+        "sizeKey": "4197",
+        "typeOfData": "file"
+    },
+    "CreatedBy": "arn:aws:sts::xxxxxxxxx:assumed-role/AWSGlueServiceRole-asd/AWS-Crawler",
+    "IsRegisteredWithLakeFormation": false,
+    "CatalogId": "xxxxxx"
+}

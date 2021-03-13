@@ -1,9 +1,13 @@
 import os
-from typing import Dict, List, Union
+from typing import List
+from typing import Union
 
-from lark import Lark, Token, Transformer, Tree
-from lark.reconstruct import Reconstructor
 from flatten.utils import flatten_dict
+from lark import Lark
+from lark import Token
+from lark import Transformer
+from lark import Tree
+from lark.reconstruct import Reconstructor
 
 
 class HiveParser:
@@ -101,20 +105,14 @@ def reconstruct_struct_type(type: dict):
     for k, v in type.items():
         if isinstance(v, dict):
             tree.children.append(
-                Tree(
-                    "name_type",
-                    [
-                        Token("NAME", k),
-                        reconstruct_struct_type(v)
-                    ]
-                ) 
-            ) 
+                Tree("name_type", [Token("NAME", k), reconstruct_struct_type(v)])
+            )
         else:
             tree.children.append(reconstruct_primitive_type(k, v))
     return tree
 
 
-def reconstruct_array_type(type: list):
+def reconstruct_array_type(type: List):
     tree = Tree("listtype", [])
     for i in type:
         if isinstance(i, dict):
@@ -128,6 +126,6 @@ def reconstruct_array_type(type: list):
     return tree
 
 
-def reconstruct_array(parser, type: List = [{"a": "string", "b": "string"}]):
+def reconstruct_array(parser, type: List):
     tree = reconstruct_array_type(type)
     return Reconstructor(parser).reconstruct(tree)
