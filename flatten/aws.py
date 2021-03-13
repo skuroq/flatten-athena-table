@@ -222,7 +222,7 @@ class GlueTable:
         # Clear metadata to force reloading from Glue next time as there may be auto-generated info in
         # there that will change
         self._metadata = None
-
+        # TODO consider moving the following creation of the glue table config into a separate jinja template
         if not parameters:
             parameters = {
                 "classification": "parquet",
@@ -325,10 +325,9 @@ class ToFlatParquet:
 
     def insert_overwrite(self, temp_db=None) -> None:
         """
-        This functions first creates a Tmp-Table in Parquet-Format for the desired Partition,
-        removes the Files from the Target-Tables-S3-Folder, then copies the Files of the Tmp-Table
-        to the Target-Table and executes a refresh of the data.
-        Finally it deletes the tmp-Table.
+        This functions first creates a temporary table with a s3 location equal to the "target" table for the
+        specified partition.
+        Existing files in the target table are removed in the refresh_target_table().
         :param temp_db:
         :return:
         """
