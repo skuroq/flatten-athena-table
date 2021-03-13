@@ -30,7 +30,6 @@ def column_query_path_format(
 ):
     key = f'"{key}"'
     if subkey:
-
         path = key + separator + subkey
     else:
         path = key
