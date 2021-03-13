@@ -7,7 +7,7 @@ import string
 from collections import namedtuple
 from typing import Dict, List
 from urllib.parse import urlsplit
-
+from functools import cached_property
 import boto3
 import pyathena
 import sqlparse
@@ -22,6 +22,7 @@ from flatten.utils import column_query_path_format, flatten_dict
 
 
 s3 = boto3.resource("s3")
+
 
 def splitted_s3_key(s3_url: str) -> Dict:
     (scheme, netloc, path, query, fragment) = urlsplit(s3_url, allow_fragments=False)
@@ -80,9 +81,11 @@ class AthenaConnection:
         cursor.execute(sql.rstrip(";") + ";")
         return cursor
 
+
 GlueColumnMapping = namedtuple(
     "GlueColumnMapping", ["source_name", "target_name", "type"]
 )
+
 
 class GlueTable:
     glue_client = boto3.client("glue")
@@ -92,18 +95,17 @@ class GlueTable:
         self.database_name = database_name
         self.table_name = table_name
         self.table_version_id = table_version_id
-        self._metadata = metadata
+        self.metadata = metadata
 
-    @property
+    @cached_property
     def metadata(self):
-        if not self._metadata:
-            if self.exists():
-                self._metadata = self._get_table(
-                    client=self.glue_client,
-                    database=self.database_name,
-                    table_name=self.table_name,
-                    table_version_id=self.table_version_id,
-                )
+        if self.exists():
+            self._metadata = self._get_table(
+                client=self.glue_client,
+                database=self.database_name,
+                table_name=self.table_name,
+                table_version_id=self.table_version_id,
+            )
         return self._metadata
 
     @property
@@ -219,9 +221,11 @@ class GlueTable:
         :param parameters: Dictionary of additional parameters
         :return:
         """
-        # Clear metadata to force reloading from Glue next time as there may be auto-generated info in
-        # there that will change
-        self._metadata = None
+        """
+        Force reloading metadata by deleting it as there may be auto-generated info in
+        there that will change
+        """
+        delattr(self, "metadata")
         # TODO consider moving the following creation of the glue table config into a separate jinja template
         if not parameters:
             parameters = {
