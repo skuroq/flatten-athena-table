@@ -5,7 +5,6 @@ setup(
     name="flatten-athena-table",
     version="0.0.1",
     description="A tool for flattening a nested Athena table",
-    url="https://github.com/skuroq/athena_schema_parser",
     python_requires=">3.8.0",
     install_requires=[
         "typer",
@@ -25,3 +24,8 @@ setup(
     package_data={"": ["*.sql", "*.lark"]},
     extras_require={"test": ["pytest", "flake8"]},
 )
+
+import setuptools
+
+if __name__ == "__main__":
+    setuptools.setup()
