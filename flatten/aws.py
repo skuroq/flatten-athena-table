@@ -23,14 +23,6 @@ from flatten.utils import column_query_path_format, flatten_dict
 
 s3 = boto3.resource("s3")
 
-GlueColumnMapping = namedtuple(
-    "GlueColumnMapping", ["source_name", "target_name", "type"]
-)
-
-
-s3 = boto3.resource("s3")
-
-
 def splitted_s3_key(s3_url: str) -> Dict:
     (scheme, netloc, path, query, fragment) = urlsplit(s3_url, allow_fragments=False)
 
@@ -43,7 +35,7 @@ def splitted_s3_key(s3_url: str) -> Dict:
 
 def query_gen(template: str, query_args: Dict) -> str:
     """
-    Uses Jinja2 to render Sql-Templates
+    Uses jinja2 to render sql templates
     :param template:
     :param query_args:
     :return:
@@ -91,6 +83,9 @@ class AthenaConnection:
         cursor.execute(sql.rstrip(";") + ";")
         return cursor
 
+GlueColumnMapping = namedtuple(
+    "GlueColumnMapping", ["source_name", "target_name", "type"]
+)
 
 class GlueTable:
     glue_client = boto3.client("glue")
